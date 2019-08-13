@@ -26,17 +26,42 @@ function sacarEstilo(range, test_name) {
   testValuesKeys.sort(function(a, b) {
     return b[1] - a[1];
   });
-
-  if (testValuesKeys[0][1] !== testValuesKeys[1][1]) {
-  } else {
-  }
   var result = [];
+
   for (var i = 0; i < testValuesKeys.length; i++) {
     var style_result = testValuesKeys[i];
     result.push(style_result[0]);
     result.push(style_result[1]);
   }
-
+  result.push("PRINCIPAL:");
+  if (testValuesKeys[0][1] !== testValuesKeys[1][1]) {
+    result.push(testValuesKeys[0][0]);
+    result.push("");
+    result.push("");
+    result.push("");
+  } else if (testValuesKeys[0][1] === testValuesKeys[3][1]) {
+    result.push(testValuesKeys[0][0]);
+    result.push(testValuesKeys[1][0]);
+    result.push(testValuesKeys[2][0]);
+    result.push(testValuesKeys[3][0]);
+  } else if (
+    testValuesKeys[0][1] === testValuesKeys[1][1] &&
+    testValuesKeys[1][1] !== testValuesKeys[2][1]
+  ) {
+    result.push(testValuesKeys[0][0]);
+    result.push(testValuesKeys[1][0]);
+    result.push("");
+    result.push("");
+  } else if (
+    testValuesKeys[0][1] === testValuesKeys[2][1] &&
+    testValuesKeys[2][1] !== testValuesKeys[3][1]
+  ) {
+    result.push(testValuesKeys[0][0]);
+    result.push(testValuesKeys[1][0]);
+    result.push(testValuesKeys[2][0]);
+    result.push("");
+  }
+  result.push("||||");
   return [result];
 }
 
