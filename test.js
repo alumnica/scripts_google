@@ -1,66 +1,85 @@
 var ss = SpreadsheetApp.getActiveSpreadsheet();
 
+function addKeysToSum(keys, sum) {
+  var testValuesKeys = [];
+  for (var i = 0; i < keys.length; i++) {
+    testValuesKeys.push([keys[i], sum[i]]);
+  }
+  return testValuesKeys;
+}
+
+function sortBigToSmall(keysWithValues, result) {
+  keysWithValues.sort(function(a, b) {
+    return b[1] - a[1];
+  });
+  for (var i = 0; i < keysWithValues.length; i++) {
+    var style_result = keysWithValues[i];
+    result.push(style_result[0]);
+    result.push(style_result[1]);
+  }
+  return keysWithValues;
+}
+
+function sacarEstilosPrincipales(sortedResults, result) {
+  if (sortedResults[0][1] !== sortedResults[1][1]) {
+    result.push(sortedResults[0][0]);
+    result.push("");
+    result.push("");
+    result.push("");
+  } else if (sortedResults[0][1] === sortedResults[3][1]) {
+    result.push(sortedResults[0][0]);
+    result.push(sortedResults[1][0]);
+    result.push(sortedResults[2][0]);
+    result.push(sortedResults[3][0]);
+  } else if (
+    sortedResults[0][1] === sortedResults[1][1] &&
+    sortedResults[1][1] !== sortedResults[2][1]
+  ) {
+    result.push(sortedResults[0][0]);
+    result.push(sortedResults[1][0]);
+    result.push("");
+    result.push("");
+  } else if (
+    sortedResults[0][1] === sortedResults[2][1] &&
+    sortedResults[2][1] !== sortedResults[3][1]
+  ) {
+    result.push(sortedResults[0][0]);
+    result.push(sortedResults[1][0]);
+    result.push(sortedResults[2][0]);
+    result.push("");
+  }
+}
+
 /**
  * Suma los valores del resultado de un solo test de un solo alumno.
  *
- * @param {Resultados!B2:R2}  range El rango de celdas que contienen el resultado del test de un alumno.
+ * @param {Resultados!B2:R2}  range El rango de celdas que contienen el resultado del test de un alumno. Selecciona todas las de UN MISMO TEST.
  * @param {"kolb"}  test_name El nombre del test que se utilizó.
- * @returns                        The time the reference was last changed.
+ * @returns                        Los estilos con sus valores y los estilos principales.
  * @customfunction
  */
-function sumaResultadosTest(range) {
-  return sumaValores(range[0]);
-}
+function calcularResultados(range, test_name) {
+  var sumRaw = sumaValores(range[0]);
+  var result = [test_name + ":"];
 
-function sacarEstilo(range, test_name) {
+  //Gets test DATA to evaluate results
   var test = getTest(test_name);
   if (test === "error") {
     return 'Solo puedes usar "kolb" o "alumnica" como nombre del test';
   }
   var testKeys = test[0].slice(2);
-  var testValuesKeys = [];
-  for (var i = 0; i < testKeys.length; i++) {
-    testValuesKeys.push([testKeys[i], range[0][i]]);
-  }
-  //Sort big to small
-  testValuesKeys.sort(function(a, b) {
-    return b[1] - a[1];
-  });
-  var result = [];
 
-  for (var i = 0; i < testValuesKeys.length; i++) {
-    var style_result = testValuesKeys[i];
-    result.push(style_result[0]);
-    result.push(style_result[1]);
-  }
+  //Join values with keys and sort them from big to small
+  var testValuesKeys = addKeysToSum(testKeys, sumRaw);
+  //Sort big to small
+
+  var sortedResults = sortBigToSmall(testValuesKeys, result);
+
+  //para que no se vea tan junto el resultadosCompatibles
   result.push("PRINCIPAL:");
-  if (testValuesKeys[0][1] !== testValuesKeys[1][1]) {
-    result.push(testValuesKeys[0][0]);
-    result.push("");
-    result.push("");
-    result.push("");
-  } else if (testValuesKeys[0][1] === testValuesKeys[3][1]) {
-    result.push(testValuesKeys[0][0]);
-    result.push(testValuesKeys[1][0]);
-    result.push(testValuesKeys[2][0]);
-    result.push(testValuesKeys[3][0]);
-  } else if (
-    testValuesKeys[0][1] === testValuesKeys[1][1] &&
-    testValuesKeys[1][1] !== testValuesKeys[2][1]
-  ) {
-    result.push(testValuesKeys[0][0]);
-    result.push(testValuesKeys[1][0]);
-    result.push("");
-    result.push("");
-  } else if (
-    testValuesKeys[0][1] === testValuesKeys[2][1] &&
-    testValuesKeys[2][1] !== testValuesKeys[3][1]
-  ) {
-    result.push(testValuesKeys[0][0]);
-    result.push(testValuesKeys[1][0]);
-    result.push(testValuesKeys[2][0]);
-    result.push("");
-  }
+
+  var estilos = sacarEstilosPrincipales(sortedResults, result);
+
   result.push("||||");
   return [result];
 }
@@ -114,9 +133,5 @@ function sumaValores(values_array) {
       j = 0;
     }
   }
-  return [[a, b, c, d, "---->"]];
-}
-
-function test() {
-  sumaResultadosTest(1, "kolb");
+  return [a, b, c, d];
 }
