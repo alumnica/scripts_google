@@ -1,4 +1,56 @@
 var ss = SpreadsheetApp.getActiveSpreadsheet();
+var resultsRaw = ss
+  .getSheetByName("Respuestas")
+  .getDataRange()
+  .getValues();
+
+var testKolb = ss
+  .getSheetByName("kolb")
+  .getDataRange()
+  .getValues();
+
+var testAlumnica = ss
+  .getSheetByName("alumnica")
+  .getDataRange()
+  .getValues();
+
+function getAnswersReference(twoDRespuestasRaw) {
+  Logger.log(Object.getOwnPropertyNames(String.prototype));
+  Logger.log(Object.getOwnPropertyNames(Array.prototype));
+  Logger.log(transpose2DArray(twoDRespuestasRaw));
+  return twoDRespuestasRaw[0];
+}
+
+function extractAnswersText(array_raw) {
+  var answersText = array_raw.map(function(text) {
+    var matches = text.match(/\[(.*?)\]/);
+    return matches ? matches[1] : text;
+  });
+  return answersText;
+}
+
+function transpose2DArray(twoDArray) {
+  return twoDArray[0].map(function(col, i) {
+    return twoDArray.map(function(row) {
+      return row[i];
+    });
+  });
+}
+
+function makeTestObject(testRawTrans) {
+  var test = {};
+  for (var i = 0; i < testRawTrans.length; i++) {
+    var row = testRawTrans[i]
+    test[row[0]] =
+
+  }
+}
+
+function allResults() {
+  var headerResults = getAnswersReference(resultsRaw);
+  var headerAnswers = extractAnswersText(headerResults);
+  return [headerAnwsers];
+}
 
 function addKeysToSum(keys, sum) {
   var testValuesKeys = [];
@@ -21,36 +73,33 @@ function sortBigToSmall(keysWithValues, result) {
 }
 
 function sacarEstilosPrincipales(sortedResults, result) {
-  var principales = [];
-  var num;
   if (sortedResults[0][1] !== sortedResults[1][1]) {
-    principales.push(sortedResults[0][0]);
-    num = 1;
+    result.push(sortedResults[0][0]);
+    result.push("");
+    result.push("");
+    result.push("");
   } else if (sortedResults[0][1] === sortedResults[3][1]) {
-    principales.push(sortedResults[0][0]);
-    principales.push(sortedResults[1][0]);
-    principales.push(sortedResults[2][0]);
-    principales.push(sortedResults[3][0]);
-    num = 4;
+    result.push(sortedResults[0][0]);
+    result.push(sortedResults[1][0]);
+    result.push(sortedResults[2][0]);
+    result.push(sortedResults[3][0]);
   } else if (
     sortedResults[0][1] === sortedResults[1][1] &&
     sortedResults[1][1] !== sortedResults[2][1]
   ) {
-    principales.push(sortedResults[0][0]);
-    principales.push(sortedResults[1][0]);
-    num = 2;
+    result.push(sortedResults[0][0]);
+    result.push(sortedResults[1][0]);
+    result.push("");
+    result.push("");
   } else if (
     sortedResults[0][1] === sortedResults[2][1] &&
     sortedResults[2][1] !== sortedResults[3][1]
   ) {
-    principales.push(sortedResults[0][0]);
-    principales.push(sortedResults[1][0]);
-    principales.push(sortedResults[2][0]);
-    num = 3;
+    result.push(sortedResults[0][0]);
+    result.push(sortedResults[1][0]);
+    result.push(sortedResults[2][0]);
+    result.push("");
   }
-  result.push("PRINCIPAL:");
-  result.push(num);
-  result.push(principales.join(", "));
 }
 
 /**
@@ -79,6 +128,7 @@ function calcularResultados(range, test_name) {
   var sortedResults = sortBigToSmall(testValuesKeys, result);
 
   //para que no se vea tan junto el resultadosCompatibles
+  result.push("PRINCIPAL:");
 
   var estilos = sacarEstilosPrincipales(sortedResults, result);
 
@@ -136,4 +186,9 @@ function sumaValores(values_array) {
     }
   }
   return [a, b, c, d];
+}
+
+function test() {
+  var test = getAnswersReference(resultsRaw);
+  Logger.log(extractAnswersText(test));
 }

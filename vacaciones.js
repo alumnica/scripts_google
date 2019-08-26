@@ -105,6 +105,7 @@ function EmailGoogleFormData(e) {
       var fueraAnoLaboral = dataDiasSolicitados[1];
       var entreAnosLaborales = dataDiasSolicitados[2];
       var diasDentro = dataDiasSolicitados[3];
+
       //EMAIL
       var subject =
         "Solicitud de vacaciones " +
