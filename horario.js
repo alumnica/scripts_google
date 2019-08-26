@@ -25,6 +25,7 @@ function countCertainDays(d0, d1) {
 }
 
 function getNetworkHours(rawString) {
+  //ej. rawString from clock 2019/08/07 ~ 08/16        ( alumnica )
   var dates = getDates(rawString);
   var startDate = typeof dates[0] == "object" ? dates[0] : new Date(dates[0]);
   var endDate = typeof dates[1] == "object" ? dates[1] : new Date(dates[1]);
