@@ -53,11 +53,11 @@ function getNetworkHours(rawString) {
 
     holidays.forEach(function(day) {
       if (day[0] >= startDate && day[0] <= endDate) {
-        if (day[0].getDay() % 6 != 0) {
-          hours -= 7;
-          // Si el feriado cae en viernes se quitan 4 horas del total
-        } else if (day[0].getDay() === 5) {
+        // Si el feriado cae en viernes se quitan 4 horas del total
+        if (day[0].getDay() === 5) {
           hours -= 4;
+        } else if (day[0].getDay() % 6 != 0) {
+          hours -= 7;
         }
       }
     });
@@ -65,4 +65,8 @@ function getNetworkHours(rawString) {
     return hours;
   }
   return null;
+}
+
+function test() {
+  Logger.log(getDates("2019/08/07 ~ 08/16        ( alumnica )"));
 }
