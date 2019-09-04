@@ -1,27 +1,76 @@
 var ss = SpreadsheetApp.getActiveSpreadsheet();
-function onOpen() {
-  var ui = SpreadsheetApp.getUi();
-  // Or DocumentApp or FormApp.
-  ui.createMenu("Alúmnica")
-    .addItem("Generar Reporte", "getNetworkHours")
-    .addToUi();
-}
+var ui = SpreadsheetApp.getUi();
 
 var holidays = ss
-  .getSheetByName("DATA")
+  .getSheetByName("HOLIDAYS")
   .getDataRange()
   .getValues()
   .filter(function(e) {
     return e[0].length !== 0;
   });
-var as = ss.getActiveSheet();
 
-var lastRow = as.getLastRow();
-var dataRelojChecadorUsuarios = as.getRange("A5:E" + lastRow).getValues();
+var users = ss
+  .getSheetByName("USERS")
+  .getDataRange()
+  .getValues()
+  .filter(function(e) {
+    return e[0].length !== 0;
+  });
 
-var dataRelojChecadorFecha = as.getRange("B2").getValues()[0][0];
+var relojData = ss.getSheetByName("Resumen");
+
+var lastRow = relojData.getLastRow();
+
+var timeRange = relojData.getRange("B2").getValues()[0][0];
+var dates = getDates(timeRange);
+
+function onOpen() {
+  // Or DocumentApp or FormApp.
+  ui.createMenu("Alúmnica")
+    .addItem("Calcular Horas", "getNetworkHours")
+    .addItem("Generar Reportes", "createReportDocuments")
+    .addToUi();
+}
+
+function formatDateESMX(date) {
+  var dias = [
+    "domingo",
+    "lunes",
+    "martes",
+    "miércoles",
+    "jueves",
+    "viernes",
+    "sábado"
+  ];
+  var meses = [
+    "enero",
+    "febrero",
+    "marzo",
+    "abril",
+    "mayo",
+    "junio",
+    "julio",
+    "agosto",
+    "septiembre",
+    "octubre",
+    "noviembre",
+    "diciembre"
+  ];
+  return (
+    dias[date.getDay()] +
+    " " +
+    date.getDate() +
+    " de " +
+    meses[date.getMonth()] +
+    " de " +
+    date.getFullYear()
+  );
+}
 
 function getDates(rawString) {
+  if (rawString === "") {
+    return;
+  }
   var datesStringsArray = rawString.match(/\d{2}[\/]\d{2}\s/gm);
   var yearString = rawString.match(/\d{4}/gm)[0];
 
@@ -53,7 +102,7 @@ function countCertainDays(days, d0, d1) {
  */
 function getNetworkHours() {
   //ej. rawString from clock 2019/08/07 ~ 08/16        ( alumnica )
-  var dates = getDates(dataRelojChecadorFecha);
+
   var startDate = typeof dates[0] == "object" ? dates[0] : new Date(dates[0]);
   var endDate = typeof dates[1] == "object" ? dates[1] : new Date(dates[1]);
   if (endDate > startDate) {
@@ -93,18 +142,22 @@ function getNetworkHours() {
         }
       }
     });
-    generateReport(hours, days);
-    as.getRange("J2").setValues([[hours]]);
+    generateReport(hours, days, startDate, endDate);
+    relojData.getRange("J2").setValues([[hours]]);
   }
   return null;
 }
-function generateReport(hours, days) {
+function generateReport(hours, days, startDate, endDate) {
+  var dataRelojChecadorUsuarios = relojData
+    .getRange("A5:E" + lastRow)
+    .getValues();
   var tolerancia = (days * 10 * -1) / 60;
   var result = [];
   dataRelojChecadorUsuarios.forEach(function(row) {
     var difHours = row[4] - hours;
-    //AMartinez Abraham Martinez hace un día de HomeOffice todos las semanas.
-    difHours += row[1] === "AMartinez" ? 7 : 0;
+    //AMartinez Abraham Martinez hace un día de HomeOffice todos los lunes.
+    var mondays = countCertainDays([1], startDate, endDate);
+    difHours += row[1] === "AMartinez" ? 7 * mondays : 0;
     var rep = difHours < tolerancia ? " ✖" : " ✔";
     result.push([row[1], difHours.toFixed(2) + rep]);
   });
@@ -112,7 +165,8 @@ function generateReport(hours, days) {
 }
 
 function setResult(result) {
-  as.getRange("F5:G" + lastRow)
+  relojData
+    .getRange("F5:G" + lastRow)
     .setValues(result)
     .setBorder(
       true,
@@ -128,7 +182,8 @@ function setResult(result) {
     .setBackground("white")
     .setFontColor("#434343");
 
-  as.getRange("F3:G4")
+  relojData
+    .getRange("F3:G4")
     .setValues([["Alúmnica", ""], ["Nombre", "Reporte"]])
     .setBorder(
       true,
@@ -145,9 +200,177 @@ function setResult(result) {
     .setBackground("#434343")
     .setWrap(false);
 
-  as.autoResizeColumns(5, 8);
+  relojData.autoResizeColumns(5, 8);
+}
+function createReportDocuments() {
+  var response = ui.prompt(
+    "¿Cómo quieres nombrar el reporte que se va a generar?",
+    ui.ButtonSet.OK_CANCEL
+  );
+  if (response.getSelectedButton() == ui.Button.OK) {
+    var reportName = response.getResponseText();
+  } else {
+    return;
+  }
+
+  var templateFileID = DriveApp.getFileById(
+    "1wXwsL-rtUTocyyG7-0YePrlvIv0mcx81feyebAM7IXk"
+  )
+    .makeCopy(
+      reportName,
+      DriveApp.getFolderById("1V1nwC7hAbo3S1aENXSXlvu6HZmz2M5lN")
+    )
+    .getId();
+
+  if (relojData.getRange("J2").getValues()[0][0] === "") {
+    getNetworkHours();
+  }
+  var doc = DocumentApp.openById(templateFileID);
+  var body = doc.getBody();
+  body.appendParagraph("");
+  body.appendParagraph("");
+  body.appendParagraph("");
+  body.appendParagraph("");
+  body.appendParagraph("");
+  body.appendParagraph("");
+  body.appendParagraph("");
+  body.appendParagraph("");
+  body.appendParagraph("");
+  body.appendParagraph("");
+  body.appendParagraph("");
+  body.appendParagraph("");
+  body
+    .appendParagraph("Reporte de Asistencia")
+    .setHeading(DocumentApp.ParagraphHeading.HEADING1)
+    .setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+
+  body
+    .appendParagraph(
+      "del " + formatDateESMX(dates[0]) + " al " + formatDateESMX(dates[1])
+    )
+    .setHeading(DocumentApp.ParagraphHeading.SUBTITLE)
+    .setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+  body.appendPageBreak();
+
+  var usersInfoAndHours = relojData.getRange("A5:G" + lastRow).getValues();
+  var userHours = ss
+    .getSheetByName("Registros")
+    .getDataRange()
+    .getValues();
+
+  var user = 1;
+
+  usersInfoAndHours.forEach(function(row) {
+    var userData = users.filter(function(user) {
+      return user[5] === row[1];
+    })[0];
+
+    var paragraph =
+      "Dentro de estas fechas, " +
+      userData[1] +
+      " " +
+      userData[2] +
+      " " +
+      userData[3] +
+      " trabajo " +
+      row[4] +
+      " horas en las oficinas de Alúmnica como detalla la siguiente tabla:";
+
+    var cells = [["FECHA", "ENTRADA", "SALIDA", "LUGAR"]];
+
+    var currentUserHoursH = [userHours[0 + 3 * user], userHours[2 + 3 * user]];
+
+    var currentUserHoursV = currentUserHoursH[0].map(function(col, i) {
+      return currentUserHoursH.map(function(row) {
+        return row[i];
+      });
+    });
+
+    currentUserHoursV.forEach(function(row) {
+      if (row[0] === "") {
+        return;
+      }
+
+      var inOutHours = row[1].match(/\d{2}:\d{2}/gm);
+      if (inOutHours) {
+        row[1] = inOutHours[0];
+        if (inOutHours[1]) {
+          row.push(inOutHours[1]);
+          row.push("Oficinas Alúmnica");
+        } else {
+          row.push("");
+          row.push("Oficinas Alúmnica");
+        }
+      } else {
+        row.push("");
+        row.push("DÍA NO LABORABLE");
+      }
+
+      cells.push(row);
+    });
+    body
+      .appendParagraph("Reporte de Asistencia")
+      .setHeading(DocumentApp.ParagraphHeading.HEADING1)
+      .setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+
+    body
+      .appendParagraph(
+        "del " + formatDateESMX(dates[0]) + " al " + formatDateESMX(dates[1])
+      )
+      .setHeading(DocumentApp.ParagraphHeading.SUBTITLE)
+      .setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+    body.appendParagraph("");
+    body.appendParagraph("");
+    body.appendParagraph(paragraph);
+    body.appendParagraph("");
+    var table = body.appendTable(cells);
+
+    var styles = {};
+    styles[DocumentApp.Attribute.PADDING_TOP] = 0.3;
+    styles[DocumentApp.Attribute.PADDING_BOTTOM] = 0.3;
+    styles[DocumentApp.Attribute.PADDING_LEFT] = 0.5;
+    styles[DocumentApp.Attribute.PADDING_RIGHT] = 0;
+    styles[DocumentApp.Attribute.HORIZONTAL_ALIGNMENT] =
+      DocumentApp.HorizontalAlignment.CENTER;
+
+    var numberOfRows = table.getNumRows();
+
+    for (var i = 0; i < numberOfRows; i++) {
+      // for each column...
+      var cols = table.getRow(i).getNumChildren();
+
+      for (var j = 0; j < cols; j++) {
+        var cell = table.getRow(i).getCell(j);
+        if (i === 0) {
+          styles[DocumentApp.Attribute.BOLD] = true;
+        }
+
+        // Set the TableCell attributes to each
+        cell.setAttributes(styles);
+
+        styles[DocumentApp.Attribute.BOLD] = false;
+      }
+    }
+
+    body.appendParagraph("");
+    body.appendParagraph("");
+    body.appendParagraph("");
+    body.appendParagraph("");
+    body.appendParagraph("");
+    body.appendHorizontalRule();
+
+    body
+      .appendParagraph(userData[1] + " " + userData[2])
+      .setHeading(DocumentApp.ParagraphHeading.SUBTITLE)
+      .setIndentStart(0)
+      .setIndentFirstLine(0)
+      .setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+
+    body.appendPageBreak();
+    user++;
+  });
 }
 
 function test() {
-  Logger.log(dataRelojChecadorUsuarios);
+  Logger.log(usersInfoAndHours);
 }
